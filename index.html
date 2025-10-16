@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Blog Viewer</title>
+    <style>
+        html, body {
+            height: 100%;
+            margin: 0;
+            font-family: Arial, sans-serif;
+            background-color: #f4f4f4;
+            overflow: hidden;
+        }
+        main {
+            display: flex;
+            height: 100vh;
+            gap: 1rem;
+            padding: 1rem;
+            box-sizing: border-box;
+        }
+        .blog-list {
+            flex: 1;
+            max-width: 250px;
+            background-color: #fff;
+            border-radius: 6px;
+            overflow-y: auto;
+        }
+        .blog-list ul {
+            list-style: none;
+            margin: 0;
+            padding: 0;
+        }
+        .blog-list li {
+            padding: 0.8rem 1rem;
+            border-bottom: 1px solid #ddd;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+        .blog-list li:hover, .blog-list li.active {
+            background-color: #0047ab;
+            color: white;
+        }
+        .blog-viewer {
+            flex: 3;
+            background-color: #fff;
+            border-radius: 6px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+        }
+        .blog-viewer iframe {
+            flex: 1;
+            border: none;
+            width: 100%;
+        }
+        .blog-viewer h2 {
+            margin: 0;
+            padding: 0.5rem 1rem;
+            border-bottom: 2px solid #0047ab;
+        }
+    </style>
+</head>
+<body>
+
+<main>
+    <div class="blog-list">
+        <ul id="blogList">
+            <!-- Blog list populated dynamically -->
+        </ul>
+    </div>
+    <div class="blog-viewer">
+        <h2 id="blogTitle">Select a blog post</h2>
+        <iframe id="blogContent"></iframe>
+    </div>
+</main>
+
+<script>
+    const blogList = document.getElementById('blogList');
+    const blogTitle = document.getElementById('blogTitle');
+    const blogContent = document.getElementById('blogContent');
+
+    async function fetchBlogs() {
+        try {
+            const res = await fetch('blogs/list.txt');
+            if (!res.ok) throw new Error('Failed to load list.txt');
+            const text = await res.text();
+
+            const regex = /\[(.+?)\]\((.+?)\)/g;
+            const posts = [];
+            let match;
+            while ((match = regex.exec(text)) !== null) {
+                posts.push({ title: match[1].trim(), folder: match[2].trim() });
+            }
+
+            populateList(posts);
+
+            if (posts.length > 0) loadBlog(posts[0]);
+
+        } catch (err) {
+            blogTitle.textContent = 'Error loading blogs';
+            blogContent.srcdoc = `<p style="color:red;">${err.message}</p>`;
+            console.error(err);
+        }
+    }
+
+    function populateList(posts) {
+        posts.forEach(post => {
+            const li = document.createElement('li');
+            li.textContent = post.title;
+            li.addEventListener('click', () => loadBlog(post));
+            blogList.appendChild(li);
+        });
+    }
+
+    function loadBlog(post) {
+        [...blogList.children].forEach(li => li.classList.remove('active'));
+        const selectedLi = [...blogList.children].find(li => li.textContent === post.title);
+        if (selectedLi) selectedLi.classList.add('active');
+
+        blogTitle.textContent = post.title;
+        blogContent.src = `blogs/${post.folder}/index.htm`;
+    }
+
+    fetchBlogs();
+</script>
+
+</body>
+</html>
